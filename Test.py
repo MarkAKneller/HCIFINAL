@@ -9,7 +9,7 @@ if 'df' not in st.session_state:
 
 # Alpha Vantage API Key and Base URL
 API_KEY = 'IBR8NA5DH28CVSUP'  # Replace with your actual API key
-
+BASE_URL = "http://apilayer.net/api/"
 
 # Function to fetch cryptocurrency data
 def get_crypto_data(symbol, market):
