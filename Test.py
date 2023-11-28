@@ -44,37 +44,28 @@ if st.sidebar.button('Analyze'):
         st.session_state['data'] = get_crypto_data(symbol, market)
         if 'Time Series (Digital Currency Daily)' in st.session_state['data']:
             st.success(f'Data for {symbol} successfully retrieved!')
-            st.session_state['df'] = pd.DataFrame.from_dict(
-                st.session_state['data']['Time Series (Digital Currency Daily)'], orient='index')
+            st.session_state['df'] = pd.DataFrame.from_dict(st.session_state['data']['Time Series (Digital Currency Daily)'], orient='index')
             st.session_state['df'] = st.session_state['df'].apply(pd.to_numeric)
             st.subheader(f'Daily Data for {symbol} in {market}')
             st.dataframe(st.session_state['df'].head())
+
+            # Display column names for debugging
+            st.write(st.session_state['df'].columns)
+
+            # Ensure the necessary columns are present in the DataFrame
+            required_columns = ['1a. open (USD)', '2a. high (USD)', '3a. low (USD)', '4a. close (USD)']
+            if all(col in st.session_state['df'] for col in required_columns):
+                fig = go.Figure(data=[go.Candlestick(x=st.session_state['df'].index,
+                                                      open=st.session_state['df']['1a. open (USD)'],
+                                                      high=st.session_state['df']['2a. high (USD)'],
+                                                      low=st.session_state['df']['3a. low (USD)'],
+                                                      close=st.session_state['df']['4a. close (USD)'])])
+                fig.update_layout(title=f'{symbol} Candlestick Chart ({resolution}H Resolution)',
+                                  xaxis=dict(title='Date'),
+                                  yaxis=dict(title=f'Price in {market}'))
+                st.plotly_chart(fig)
+            else:
+                st.warning('Required columns not found in the DataFrame. Unable to create the candlestick chart.')
+
         else:
             st.error('Error fetching data. Please check the symbol and try again.')
-
-# Check if DataFrame is not empty before plotting
-if not st.session_state['df'].empty:
-    # Calculate daily price variance
-    st.session_state['df']['Price Variance'] = st.session_state['df']['2. high'].sub(st.session_state['df']['3. low'])
-
-    # Filter data based on resolution
-    st.session_state['df'] = st.session_state['df'].resample(f'{resolution}H').agg({
-        '1b. open (USD)': 'first',
-        '2. high': 'max',
-        '3. low': 'min',
-        '5. volume': 'sum',
-        '4a. close (USD)': 'last',
-        'Price Variance': 'mean'
-    })
-
-    # Create a candlestick chart
-    trace = go.Candlestick(x=st.session_state['df'].index,
-                           open=st.session_state['df']['1b. open (USD)'],
-                           high=st.session_state['df']['2. high'],
-                           low=st.session_state['df']['3. low'],
-                           close=st.session_state['df']['4a. close (USD)'])
-    layout = go.Layout(title=f'{symbol} Candlestick Chart ({resolution}H Resolution)',
-                       xaxis=dict(title='Date'),
-                       yaxis=dict(title=f'Price in {market}'))
-    fig = go.Figure(data=[trace], layout=layout)
-    st.plotly_chart(fig)
