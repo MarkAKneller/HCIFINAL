@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import requests
 import plotly.graph_objs as go
+from datetime import datetime
 
 # Initialize session state
 if 'df' not in st.session_state:
@@ -34,40 +35,60 @@ st.write("Explore the dynamic world of cryptocurrencies. Analyze daily trends, p
 
 # Sidebar for user input
 st.sidebar.header('Customize Your Analysis')
-symbol = st.sidebar.selectbox('Cryptocurrency Symbol', ['BTC', 'SOL', 'ETC'], help='Enter a cryptocurrency symbol (e.g., BTC, ETH)')
+symbol = st.sidebar.selectbox('Cryptocurrency Symbol', ['BTC', 'ETH', 'XRP'], help='Enter a cryptocurrency symbol (e.g., BTC, ETH)')
 market = st.sidebar.selectbox('Market Currency', ['USD', 'EUR', 'JPY'], help='Select the currency for market comparison')
 show_volume = st.sidebar.checkbox("Show Volume Data", help='Display volume data for the selected cryptocurrency')
 
+# Date range picker
+start_date, end_date = st.sidebar.date_input(
+    "Select Date Range",
+    value=[datetime.now().date(), datetime.now().date()],
+    help='Select start and end dates for the data'
+)
+
+# Validate date range
+if start_date > end_date:
+    st.sidebar.error("End date must be after start date.")
+
 # Fetch data button
 if st.sidebar.button('Analyze'):
-    with st.spinner('Fetching data...'):
-        st.session_state['data'] = get_crypto_data(symbol, market)
-        if 'Time Series (Digital Currency Daily)' in st.session_state['data']:
-            st.success(f'Data for {symbol} successfully retrieved!')
-            df = pd.DataFrame.from_dict(st.session_state['data']['Time Series (Digital Currency Daily)'], orient='index')
-            df = df.apply(pd.to_numeric)
+    if start_date <= end_date:
+        with st.spinner('Fetching data...'):
+            st.session_state['data'] = get_crypto_data(symbol, market)
+            if 'Time Series (Digital Currency Daily)' in st.session_state['data']:
+                st.success(f'Data for {symbol} successfully retrieved!')
+                df = pd.DataFrame.from_dict(st.session_state['data']['Time Series (Digital Currency Daily)'], orient='index')
+                df = df.apply(pd.to_numeric)
 
-            # Optionally display volume data
-            if not show_volume:
-                df = df.drop(columns=[col for col in df.columns if 'volume' in col.lower()], errors='ignore')
+                # Convert index to datetime for filtering
+                df.index = pd.to_datetime(df.index)
 
-            st.subheader(f'Daily Data for {symbol} in {market}')
-            st.dataframe(df.head())
+                # Filter data based on selected date range
+                df_filtered = df[(df.index.date >= start_date) & (df.index.date <= end_date)]
 
-            # Ensure the necessary columns are present in the DataFrame for the chart
-            required_columns = ['1a. open (USD)', '2a. high (USD)', '3a. low (USD)', '4a. close (USD)']
-            if all(col in df.columns for col in required_columns):
-                fig = go.Figure(data=[go.Candlestick(x=df.index,
-                                                      open=df['1a. open (USD)'],
-                                                      high=df['2a. high (USD)'],
-                                                      low=df['3a. low (USD)'],
-                                                      close=df['4a. close (USD)'])])
-                fig.update_layout(title=f'{symbol} Candlestick Chart',
-                                  xaxis=dict(title='Date'),
-                                  yaxis=dict(title=f'Price in {market}'))
-                st.plotly_chart(fig)
+                # Optionally display volume data
+                if not show_volume:
+                    df_filtered = df_filtered.drop(columns=[col for col in df_filtered.columns if 'volume' in col.lower()], errors='ignore')
+
+                st.subheader(f'Daily Data for {symbol} in {market}')
+                st.dataframe(df_filtered.head())
+
+                # Ensure the necessary columns are present in the DataFrame for the chart
+                required_columns = ['1a. open (USD)', '2a. high (USD)', '3a. low (USD)', '4a. close (USD)']
+                if all(col in df_filtered.columns for col in required_columns):
+                    fig = go.Figure(data=[go.Candlestick(x=df_filtered.index,
+                                                         open=df_filtered['1a. open (USD)'],
+                                                         high=df_filtered['2a. high (USD)'],
+                                                         low=df_filtered['3a. low (USD)'],
+                                                         close=df_filtered['4a. close (USD)'])])
+                    fig.update_layout(title=f'{symbol} Candlestick Chart',
+                                      xaxis=dict(title='Date'),
+                                      yaxis=dict(title=f'Price in {market}'))
+                    st.plotly_chart(fig)
+                else:
+                    st.warning('Required columns not found in the DataFrame. Unable to create the candlestick chart.')
+
             else:
-                st.warning('Required columns not found in the DataFrame. Unable to create the candlestick chart.')
-
-        else:
-            st.error('Error fetching data. Please check the symbol and try again.')
+                st.error('Error fetching data. Please check the symbol and try again.')
+    else:
+        st.error('Invalid date range. Please select a valid range.')
