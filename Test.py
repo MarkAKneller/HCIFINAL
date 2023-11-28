@@ -15,7 +15,6 @@ headers = {
     "X-RapidAPI-Host": "alpha-vantage.p.rapidapi.com"
 }
 
-
 # Function to fetch cryptocurrency data
 def get_crypto_data(symbol, market):
     querystring = {
@@ -26,7 +25,6 @@ def get_crypto_data(symbol, market):
 
     response = requests.get(url, headers=headers, params=querystring)
     data = response.json()
-    print(response.json())
     return data
 
 
