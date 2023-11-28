@@ -71,22 +71,24 @@ if st.sidebar.button('Analyze'):
                     df_filtered = df_filtered.drop(columns=[col for col in df_filtered.columns if 'volume' in col.lower()], errors='ignore')
 
                 st.subheader(f'Daily Data for {symbol} in {market}')
-                st.dataframe(df_filtered.head())
+                st.dataframe(df_filtered)  # Displaying the filtered data
 
-                # Ensure the necessary columns are present in the DataFrame for the chart
-                required_columns = ['1a. open (USD)', '2a. high (USD)', '3a. low (USD)', '4a. close (USD)']
-                if all(col in df_filtered.columns for col in required_columns):
-                    fig = go.Figure(data=[go.Candlestick(x=df_filtered.index,
-                                                         open=df_filtered['1a. open (USD)'],
-                                                         high=df_filtered['2a. high (USD)'],
-                                                         low=df_filtered['3a. low (USD)'],
-                                                         close=df_filtered['4a. close (USD)'])])
-                    fig.update_layout(title=f'{symbol} Candlestick Chart',
-                                      xaxis=dict(title='Date'),
-                                      yaxis=dict(title=f'Price in {market}'))
-                    st.plotly_chart(fig)
+                # Candlestick Chart
+                required_columns_candlestick = ['1a. open (USD)', '2a. high (USD)', '3a. low (USD)', '4a. close (USD)']
+                if all(col in df_filtered.columns for col in required_columns_candlestick):
+                    fig_candlestick = go.Figure(data=[go.Candlestick(x=df_filtered.index,
+                                                                     open=df_filtered['1a. open (USD)'],
+                                                                     high=df_filtered['2a. high (USD)'],
+                                                                     low=df_filtered['3a. low (USD)'],
+                                                                     close=df_filtered['4a. close (USD)'])])
+                    fig_candlestick.update_layout(title=f'{symbol} Candlestick Chart',
+                                                  xaxis=dict(title='Date'),
+                                                  yaxis=dict(title=f'Price in {market}'))
+                    st.plotly_chart(fig_candlestick)
                 else:
                     st.warning('Required columns not found in the DataFrame. Unable to create the candlestick chart.')
+
+                # Placeholder for Additional Chart (if needed)
 
             else:
                 st.error('Error fetching data. Please check the symbol and try again.')
