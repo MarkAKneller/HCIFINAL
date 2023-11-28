@@ -30,7 +30,7 @@ st.write("Explore the dynamic world of cryptocurrencies. Analyze daily trends, p
 
 # Sidebar for user input
 st.sidebar.header('Customize Your Analysis')
-symbol = st.sidebar.text_input('Cryptocurrency Symbol', 'BTC', help='Enter a cryptocurrency symbol (e.g., BTC, ETH)')
+symbol = st.sidebar.selectbox('Cryptocurrency Symbol', ['USD', 'EUR', 'JPY'], help='Enter a cryptocurrency symbol (e.g., BTC, ETH)')
 market = st.sidebar.selectbox('Market Currency', ['USD', 'EUR', 'JPY'], help='Select the currency for market comparison')
 
 # Fetch data button
