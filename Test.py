@@ -1,15 +1,14 @@
 import streamlit as st
 import pandas as pd
 import requests
+import matplotlib.pyplot as plt
 
 # Initialize session state
 if 'df' not in st.session_state:
     st.session_state['df'] = pd.DataFrame()
-if 'data' not in st.session_state:
-    st.session_state['data'] = {}
 
 # Alpha Vantage API Key and Base URL
-API_KEY = 'IBR8NA5DH28CVSUP'
+API_KEY = 'YOUR_API_KEY'  # Replace with your actual API key
 BASE_URL = "https://www.alphavantage.co/query"
 
 # Function to fetch cryptocurrency data
@@ -30,57 +29,50 @@ st.write("Explore the dynamic world of cryptocurrencies. Analyze daily trends, p
 
 # Sidebar for user input
 st.sidebar.header('Customize Your Analysis')
-symbol = st.sidebar.selectbox('Cryptocurrency Symbol', ['BTC', 'SOL', 'ETC'], help='Enter a cryptocurrency symbol (e.g., BTC, ETH)')
+symbol = st.sidebar.selectbox('Cryptocurrency Symbol', ['BTC', 'ETH', 'SOL'], help='Enter a cryptocurrency symbol (e.g., BTC, ETH)')
 market = st.sidebar.selectbox('Market Currency', ['USD', 'EUR', 'JPY'], help='Select the currency for market comparison')
 
 # Fetch data button
 if st.sidebar.button('Analyze'):
     with st.spinner('Fetching data...'):
-        st.session_state['data'] = get_crypto_data(symbol, market)
-        if 'Time Series (Digital Currency Daily)' in st.session_state['data']:
+        data = get_crypto_data(symbol, market)
+        if 'Time Series (Digital Currency Daily)' in data:
             st.success(f'Data for {symbol} successfully retrieved!')
-            st.session_state['df'] = pd.DataFrame.from_dict(st.session_state['data']['Time Series (Digital Currency Daily)'], orient='index')
-            st.session_state['df'] = st.session_state['df'].apply(pd.to_numeric)
+            df = pd.DataFrame.from_dict(data['Time Series (Digital Currency Daily)'], orient='index')
+            df = df.apply(pd.to_numeric)
+            df.index = pd.to_datetime(df.index)
+            st.session_state['df'] = df
             st.subheader(f'Daily Data for {symbol} in {market}')
-            st.dataframe(st.session_state['df'].head())
+            st.dataframe(df.head())
         else:
             st.error('Error fetching data. Please check the symbol and try again.')
 
 # Check if DataFrame is not empty before plotting
 if not st.session_state['df'].empty:
-    # Additional interactive elements
-    if st.sidebar.checkbox('Show Raw Data', False):
-        st.subheader('Raw JSON Data')
-        st.json(st.session_state['data'])
+    # Date range selector
+    st.sidebar.subheader('Select Date Range')
+    start_date = st.sidebar.date_input('Start date', st.session_state['df'].index.min())
+    end_date = st.sidebar.date_input('End date', st.session_state['df'].index.max())
 
-    # Example map (static for demonstration)
-    if st.sidebar.checkbox('Show Example Map', False):
-        st.subheader('Global Market Overview')
-        map_data = pd.DataFrame({'lat': [37.76, 40.71], 'lon': [-122.4, -74.0]})
-        st.map(map_data)
+    # Filter data based on selection
+    filtered_df = st.session_state['df'].loc[start_date:end_date]
 
-    # Feedback and messages
-    if st.sidebar.button('Show Success Message'):
-        st.success('Success! Your analysis is ready.')
-    if st.sidebar.button('Show Info Message'):
-        st.info('Did you know? Cryptocurrency markets are highly volatile.')
-    if st.sidebar.button('Show Warning Message'):
-        st.warning('Warning: Cryptocurrency investments are subject to market risks.')
+    # Calculate daily price change
+    closing_price_column = f'4a. close ({market})'  # Adjust column name based on market currency
+    filtered_df['Price Change'] = filtered_df[closing_price_column].diff()
 
-    # Additional Widgets
-    st.sidebar.subheader('Additional Settings')
-    time_frame = st.sidebar.slider('Select Time Frame (Days)', 1, 60, 30)
-    st.sidebar.write(f'Analyzing the last {time_frame} days')
+    # Plotting the closing price with color based on price change
+    if not filtered_df.empty:
+        fig, ax = plt.subplots()
+        for i in range(1, len(filtered_df)):
+            # Determine color (green for increase, red for decrease)
+            color = 'green' if filtered_df['Price Change'].iloc[i] >= 0 else 'red'
+            ax.plot(filtered_df.index[i-1:i+1], filtered_df[closing_price_column].iloc[i-1:i+1], color=color)
 
-    # Radio button for chart type
-    chart_type = st.sidebar.radio('Choose Chart Type', ['Line Chart', 'Bar Chart'])
-    if chart_type == 'Line Chart':
-        st.line_chart(st.session_state['df']['4a. close (USD)'].tail(time_frame))
-    elif chart_type == 'Bar Chart':
-        st.bar_chart(st.session_state['df']['5. volume'].tail(time_frame))
+        ax.set_xlabel('Date')
+        ax.set_ylabel(f'Closing Price ({market})')
+        ax.set_title(f'{symbol} Closing Price in {market}')
+        st.pyplot(fig)
 
-    # Number input for custom analysis
-    custom_value = st.sidebar.number_input('Enter a custom value', min_value=0, max_value=10000, value=5000)
-    st.sidebar.write('Your custom value is:', custom_value)
+# Run the app: streamlit run your_script_name.py
 
-# Run the app: streamlit run Test.py
