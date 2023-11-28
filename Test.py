@@ -36,7 +36,7 @@ st.write("Explore the dynamic world of cryptocurrencies. Analyze daily trends, p
 st.sidebar.header('Customize Your Analysis')
 symbol = st.sidebar.selectbox('Cryptocurrency Symbol', ['BTC', 'SOL', 'ETC'], help='Enter a cryptocurrency symbol (e.g., BTC, ETH)')
 market = st.sidebar.selectbox('Market Currency', ['USD', 'EUR', 'JPY'], help='Select the currency for market comparison')
-resolution = st.sidebar.slider('Select Graph Resolution (Hours)', 1, 24, 1, help='Choose the resolution of the candlestick chart (hours)')
+show_volume = st.sidebar.checkbox("Show Volume Data", help='Display volume data for the selected cryptocurrency')
 
 # Fetch data button
 if st.sidebar.button('Analyze'):
@@ -44,23 +44,25 @@ if st.sidebar.button('Analyze'):
         st.session_state['data'] = get_crypto_data(symbol, market)
         if 'Time Series (Digital Currency Daily)' in st.session_state['data']:
             st.success(f'Data for {symbol} successfully retrieved!')
-            st.session_state['df'] = pd.DataFrame.from_dict(st.session_state['data']['Time Series (Digital Currency Daily)'], orient='index')
-            st.session_state['df'] = st.session_state['df'].apply(pd.to_numeric)
+            df = pd.DataFrame.from_dict(st.session_state['data']['Time Series (Digital Currency Daily)'], orient='index')
+            df = df.apply(pd.to_numeric)
+
+            # Optionally display volume data
+            if not show_volume:
+                df = df.drop(columns=[col for col in df.columns if 'volume' in col.lower()], errors='ignore')
+
             st.subheader(f'Daily Data for {symbol} in {market}')
-            st.dataframe(st.session_state['df'].head())
+            st.dataframe(df.head())
 
-            # Display column names for debugging
-            st.write(st.session_state['df'].columns)
-
-            # Ensure the necessary columns are present in the DataFrame
+            # Ensure the necessary columns are present in the DataFrame for the chart
             required_columns = ['1a. open (USD)', '2a. high (USD)', '3a. low (USD)', '4a. close (USD)']
-            if all(col in st.session_state['df'] for col in required_columns):
-                fig = go.Figure(data=[go.Candlestick(x=st.session_state['df'].index,
-                                                      open=st.session_state['df']['1a. open (USD)'],
-                                                      high=st.session_state['df']['2a. high (USD)'],
-                                                      low=st.session_state['df']['3a. low (USD)'],
-                                                      close=st.session_state['df']['4a. close (USD)'])])
-                fig.update_layout(title=f'{symbol} Candlestick Chart ({resolution}H Resolution)',
+            if all(col in df.columns for col in required_columns):
+                fig = go.Figure(data=[go.Candlestick(x=df.index,
+                                                      open=df['1a. open (USD)'],
+                                                      high=df['2a. high (USD)'],
+                                                      low=df['3a. low (USD)'],
+                                                      close=df['4a. close (USD)'])])
+                fig.update_layout(title=f'{symbol} Candlestick Chart',
                                   xaxis=dict(title='Date'),
                                   yaxis=dict(title=f'Price in {market}'))
                 st.plotly_chart(fig)
