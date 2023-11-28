@@ -2,8 +2,14 @@ import streamlit as st
 import pandas as pd
 import requests
 
+# Initialize session state
+if 'df' not in st.session_state:
+    st.session_state['df'] = pd.DataFrame()
+if 'data' not in st.session_state:
+    st.session_state['data'] = {}
+
 # Alpha Vantage API Key and Base URL
-API_KEY = 'YOUR_ALPHA_VANTAGE_API_KEY'
+API_KEY = 'IBR8NA5DH28CVSUP'
 BASE_URL = "https://www.alphavantage.co/query"
 
 # Function to fetch cryptocurrency data
@@ -27,28 +33,25 @@ st.sidebar.header('Customize Your Analysis')
 symbol = st.sidebar.text_input('Cryptocurrency Symbol', 'BTC', help='Enter a cryptocurrency symbol (e.g., BTC, ETH)')
 market = st.sidebar.selectbox('Market Currency', ['USD', 'EUR', 'JPY'], help='Select the currency for market comparison')
 
-# Initialize an empty DataFrame
-df = pd.DataFrame()
-
 # Fetch data button
 if st.sidebar.button('Analyze'):
     with st.spinner('Fetching data...'):
-        data = get_crypto_data(symbol, market)
-        if 'Time Series (Digital Currency Daily)' in data:
+        st.session_state['data'] = get_crypto_data(symbol, market)
+        if 'Time Series (Digital Currency Daily)' in st.session_state['data']:
             st.success(f'Data for {symbol} successfully retrieved!')
-            df = pd.DataFrame.from_dict(data['Time Series (Digital Currency Daily)'], orient='index')
-            df = df.apply(pd.to_numeric)
+            st.session_state['df'] = pd.DataFrame.from_dict(st.session_state['data']['Time Series (Digital Currency Daily)'], orient='index')
+            st.session_state['df'] = st.session_state['df'].apply(pd.to_numeric)
             st.subheader(f'Daily Data for {symbol} in {market}')
-            st.dataframe(df.head())
+            st.dataframe(st.session_state['df'].head())
         else:
             st.error('Error fetching data. Please check the symbol and try again.')
 
 # Check if DataFrame is not empty before plotting
-if not df.empty:
+if not st.session_state['df'].empty:
     # Additional interactive elements
     if st.sidebar.checkbox('Show Raw Data', False):
         st.subheader('Raw JSON Data')
-        st.json(data)
+        st.json(st.session_state['data'])
 
     # Example map (static for demonstration)
     if st.sidebar.checkbox('Show Example Map', False):
@@ -72,12 +75,12 @@ if not df.empty:
     # Radio button for chart type
     chart_type = st.sidebar.radio('Choose Chart Type', ['Line Chart', 'Bar Chart'])
     if chart_type == 'Line Chart':
-        st.line_chart(df['4a. close (USD)'].tail(time_frame))
+        st.line_chart(st.session_state['df']['4a. close (USD)'].tail(time_frame))
     elif chart_type == 'Bar Chart':
-        st.bar_chart(df['5. volume'].tail(time_frame))
+        st.bar_chart(st.session_state['df']['5. volume'].tail(time_frame))
 
     # Number input for custom analysis
     custom_value = st.sidebar.number_input('Enter a custom value', min_value=0, max_value=10000, value=5000)
     st.sidebar.write('Your custom value is:', custom_value)
 
-# Run the app: streamlit run app.py
+# Run the app: streamlit run Test.py
