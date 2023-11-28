@@ -28,4 +28,4 @@ if st.button('Get Data'):
     else:
         st.error('Error fetching data. Please check the symbol and try again.')
 
-# Run the app: streamlit run app.py
+# Run the app: streamlit run HCI.py
