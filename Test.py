@@ -34,7 +34,7 @@ st.write("Explore the dynamic world of cryptocurrencies. Analyze daily trends, p
 # Sidebar for user input
 st.sidebar.header('Customize Your Analysis')
 symbol = st.sidebar.selectbox('Cryptocurrency Symbol', ['BTC', 'ETH', 'XRP'], help='Enter a cryptocurrency symbol (e.g., BTC, ETH)')
-market = st.sidebar.selectbox('Market Currency', ['USD', 'EUR', 'JPY'], help='Select the currency for market comparison')
+market = st.sidebar.selectbox('Market Currency', ['USD'], help='Select the currency for market comparison')
 start_date, end_date = st.sidebar.date_input("Select Date Range", [datetime.now().date(), datetime.now().date()], help='Select start and end dates for the data')
 
 # Validate date range
