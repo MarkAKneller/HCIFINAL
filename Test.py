@@ -8,8 +8,8 @@ if 'df' not in st.session_state:
     st.session_state['df'] = pd.DataFrame()
 
 # Alpha Vantage API Key and Base URL
-API_KEY = 'YOUR_API_KEY'  # Replace with your actual API key
-BASE_URL = "https://www.alphavantage.co/query"
+API_KEY = 'IBR8NA5DH28CVSUP'  # Replace with your actual API key
+
 
 # Function to fetch cryptocurrency data
 def get_crypto_data(symbol, market):
