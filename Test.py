@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import requests
+import plotly.graph_objs as go
 
 # Initialize session state
 if 'df' not in st.session_state:
@@ -27,17 +28,15 @@ def get_crypto_data(symbol, market):
     data = response.json()
     return data
 
-
 # Set up the page
 st.title('Cryptocurrency Analysis Dashboard')
 st.write("Explore the dynamic world of cryptocurrencies. Analyze daily trends, prices, and volumes at a glance.")
 
 # Sidebar for user input
 st.sidebar.header('Customize Your Analysis')
-symbol = st.sidebar.selectbox('Cryptocurrency Symbol', ['BTC', 'SOL', 'ETC'],
-                              help='Enter a cryptocurrency symbol (e.g., BTC, ETH)')
-market = st.sidebar.selectbox('Market Currency', ['USD', 'EUR', 'JPY'],
-                              help='Select the currency for market comparison')
+symbol = st.sidebar.selectbox('Cryptocurrency Symbol', ['BTC', 'SOL', 'ETC'], help='Enter a cryptocurrency symbol (e.g., BTC, ETH)')
+market = st.sidebar.selectbox('Market Currency', ['USD', 'EUR', 'JPY'], help='Select the currency for market comparison')
+resolution = st.sidebar.slider('Select Graph Resolution (Hours)', 1, 24, 1, help='Choose the resolution of the candlestick chart (hours)')
 
 # Fetch data button
 if st.sidebar.button('Analyze'):
@@ -55,39 +54,27 @@ if st.sidebar.button('Analyze'):
 
 # Check if DataFrame is not empty before plotting
 if not st.session_state['df'].empty:
-    # Additional interactive elements
-    if st.sidebar.checkbox('Show Raw Data', False):
-        st.subheader('Raw JSON Data')
-        st.json(st.session_state['data'])
+    # Calculate daily price variance
+    st.session_state['df']['Price Variance'] = st.session_state['df']['2. high'].sub(st.session_state['df']['3. low'])
 
-    # Example map (static for demonstration)
-    if st.sidebar.checkbox('Show Example Map', False):
-        st.subheader('Global Market Overview')
-        map_data = pd.DataFrame({'lat': [37.76, 40.71], 'lon': [-122.4, -74.0]})
-        st.map(map_data)
+    # Filter data based on resolution
+    st.session_state['df'] = st.session_state['df'].resample(f'{resolution}H').agg({
+        '1b. open (USD)': 'first',
+        '2. high': 'max',
+        '3. low': 'min',
+        '5. volume': 'sum',
+        '4a. close (USD)': 'last',
+        'Price Variance': 'mean'
+    })
 
-    # Feedback and messages
-    if st.sidebar.button('Show Success Message'):
-        st.success('Success! Your analysis is ready.')
-    if st.sidebar.button('Show Info Message'):
-        st.info('Did you know? Cryptocurrency markets are highly volatile.')
-    if st.sidebar.button('Show Warning Message'):
-        st.warning('Warning: Cryptocurrency investments are subject to market risks.')
-
-    # Additional Widgets
-    st.sidebar.subheader('Additional Settings')
-    time_frame = st.sidebar.slider('Select Time Frame (Days)', 1, 60, 30)
-    st.sidebar.write(f'Analyzing the last {time_frame} days')
-
-    # Radio button for chart type
-    chart_type = st.sidebar.radio('Choose Chart Type', ['Line Chart', 'Bar Chart'])
-    if chart_type == 'Line Chart':
-        st.line_chart(st.session_state['df']['4a. close (USD)'].tail(time_frame))
-    elif chart_type == 'Bar Chart':
-        st.bar_chart(st.session_state['df']['5. volume'].tail(time_frame))
-
-    # Number input for custom analysis
-    custom_value = st.sidebar.number_input('Enter a custom value', min_value=0, max_value=10000, value=5000)
-    st.sidebar.write('Your custom value is:', custom_value)
-
-# Run the app: streamlit run Test.py
+    # Create a candlestick chart
+    trace = go.Candlestick(x=st.session_state['df'].index,
+                           open=st.session_state['df']['1b. open (USD)'],
+                           high=st.session_state['df']['2. high'],
+                           low=st.session_state['df']['3. low'],
+                           close=st.session_state['df']['4a. close (USD)'])
+    layout = go.Layout(title=f'{symbol} Candlestick Chart ({resolution}H Resolution)',
+                       xaxis=dict(title='Date'),
+                       yaxis=dict(title=f'Price in {market}'))
+    fig = go.Figure(data=[trace], layout=layout)
+    st.plotly_chart(fig)
