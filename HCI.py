@@ -8,7 +8,7 @@ st.title('Cryptocurrency Analysis App')
 st.write('This app uses the Alpha Vantage API to fetch cryptocurrency data.')
 
 # Alpha Vantage API Key (replace with your own key)
-API_KEY = 'YOUR_ALPHA_VANTAGE_API_KEY'
+API_KEY = 'IBR8NA5DH28CVSUP'
 
 # Function to fetch cryptocurrency data
 def get_crypto_data(symbol):
