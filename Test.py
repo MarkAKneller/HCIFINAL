@@ -40,6 +40,9 @@ start_date, end_date = st.sidebar.date_input("Select Date Range", [datetime.now(
 # Validate date range
 if start_date > end_date:
     st.sidebar.error("End date must be after start date.")
+    
+# Radio button for selecting view
+view_option = st.sidebar.radio('Choose View', ['Data View', 'Candlestick Chart'])
 
 # Fetch data button
 if st.sidebar.button('Fetch Data'):
