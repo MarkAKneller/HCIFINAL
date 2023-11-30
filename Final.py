@@ -44,9 +44,6 @@ def get_monthly_crypto_data(symbol, market, api_key):
     else:
         return None
 
-# Set up the page
-st.title('Cryptocurrency Data Visualizer')
-
 # Sidebar for page selection
 page = st.sidebar.selectbox(
     "Select a Page",
@@ -113,11 +110,17 @@ if page == "Homepage":
     st.write(
         "Explore these features in the sidebar and start analyzing cryptocurrencies today!"
     )
+    st.warning(
+        "⚠️ Cryptocurrency markets are known for their high volatility, which can lead to significant price swings. "
+        "Investors should be aware of the risks involved, including the possibility of losing their entire investment. "
+        "Volatility is influenced by factors like regulatory news, market manipulation, and the relatively small size of the market compared to traditional securities."
+
+    )
 
 elif page == "Comparison":
     st.title('Select Cryptocurrencies for Comparison')
-    selected_crypto_1 = st.selectbox("Select first cryptocurrency", ["", "BTC", "XRP", "ETH", "SOL", "LTC", "BNB"])
-    selected_crypto_2 = st.selectbox("Select second cryptocurrency", ["", "BTC", "XRP", "ETH", "SOL", "LTC", "BNB"])
+    selected_crypto_1 = st.selectbox("Select first cryptocurrency", ["", "BTC", "XRP", "ETH", "SOL", "LTC", "BNB", "ADA"])
+    selected_crypto_2 = st.selectbox("Select second cryptocurrency", ["", "BTC", "XRP", "ETH", "SOL", "LTC", "BNB", "ADA"])
 
     if selected_crypto_1 == selected_crypto_2 and selected_crypto_1 != "":
         st.error("Please select two different cryptocurrencies.")
@@ -205,7 +208,7 @@ elif page == "Candles":
 
     # Sidebar for user input
     st.sidebar.header('Customize Your Analysis')
-    symbol = st.sidebar.selectbox('Cryptocurrency Symbol', ['BTC', 'ETH', 'XRP', 'SOL'],
+    symbol = st.sidebar.selectbox('Cryptocurrency Symbol', ["BTC", "XRP", "ETH", "SOL", "LTC", "BNB", "ADA"],
                                   help='Enter a cryptocurrency symbol (e.g., BTC, ETH)')
     market = st.sidebar.selectbox('Market Currency', ['USD'], help='Select the currency for market comparison')
     start_date, end_date = st.sidebar.date_input("Select Date Range", [datetime.now().date(), datetime.now().date()],
@@ -215,8 +218,6 @@ elif page == "Candles":
     if start_date > end_date:
         st.sidebar.error("End date must be after start date.")
 
-    # Radio button for selecting view
-    view_option = st.sidebar.radio('Choose View', ['Data View', 'Candlestick Chart'])
 
     # Fetch data button
     if st.sidebar.button('Fetch Data'):
@@ -294,34 +295,29 @@ elif page == "Ban Map":
     # Step 4: Streamlit App
     st.title("Countries Crypto is banned")
 
+   
+
     # Display the Folium Map
     folium_static(m)
-
+    st.info("In some countries, cryptocurrencies are banned due to concerns over financial security, regulatory control, and potential use in illegal activities. "
+        "Each country's stance on cryptocurrencies can vary greatly based on its economic policies, financial market stability, and governmental regulations.")
 elif page == "Calculator":
-    st.title('Cryptocurrency Conversion Calculator')
+    st.title("Currency Converter")
 
-    # Inputs
-    amount_usd = st.number_input("Enter amount in USD:", min_value=0.0, format="%.2f")
-    selected_crypto = st.selectbox("Select cryptocurrency", ["BTC", "ETH", "XRP", "SOL"])
+    # Sidebar for user input
+    usd_amount = st.number_input('Enter the amount in USD', value=100.0, min_value=0.0)
+    coin_symbol = st.selectbox('Select a cryptocurrency', ['BTC', 'ETH', 'XRP', 'SOL', 'BNB', 'LTC', 'ADA'], help='Select a cryptocurrency symbol')
 
-    # Fetch Current Exchange Rate
-    def get_exchange_rate(crypto_symbol):
-        querystring = {
-            'function': 'CURRENCY_EXCHANGE_RATE',
-            'from_currency': 'USD',
-            'to_currency': crypto_symbol,
-            'apikey': api_key
-        }
-        response = requests.get("https://www.alphavantage.co/query", params=querystring)
-        data = response.json()
-        exchange_rate = data['Realtime Currency Exchange Rate']['5. Exchange Rate']
-        return float(exchange_rate)
+    # Function call to retrieve cryptocurrency data
+    data = get_crypto_data(coin_symbol, 'USD')
 
-    # Conversion and Display
-    if st.button('Convert'):
-        try:
-            exchange_rate = get_exchange_rate(selected_crypto)
-            crypto_amount = amount_usd / exchange_rate
-            st.success(f"{amount_usd} USD is approximately {crypto_amount:.6f} {selected_crypto}.")
-        except Exception as e:
-            st.error(f"Error: {str(e)}")
+    if 'Time Series (Digital Currency Daily)' in data:
+        time_series_data = data['Time Series (Digital Currency Daily)']
+        latest_date = max(time_series_data.keys())  # Get the latest date available
+
+        latest_price = float(time_series_data[latest_date]['4a. close (USD)'])
+        coin_amount = usd_amount / latest_price
+        st.success(f"The current price of {coin_symbol} is$ {latest_price}")
+        st.success(f"${usd_amount} USD can buy you approximately {coin_amount:.8f} {coin_symbol}")
+    else:
+        st.error('Error fetching data. Please try again.')
