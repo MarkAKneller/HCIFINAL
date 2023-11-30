@@ -298,4 +298,30 @@ elif page == "Ban Map":
     folium_static(m)
 
 elif page == "Calculator":
-    st.write("To be constructed")
+    st.title('Cryptocurrency Conversion Calculator')
+
+    # Inputs
+    amount_usd = st.number_input("Enter amount in USD:", min_value=0.0, format="%.2f")
+    selected_crypto = st.selectbox("Select cryptocurrency", ["BTC", "ETH", "XRP", "SOL"])
+
+    # Fetch Current Exchange Rate
+    def get_exchange_rate(crypto_symbol):
+        querystring = {
+            'function': 'CURRENCY_EXCHANGE_RATE',
+            'from_currency': 'USD',
+            'to_currency': crypto_symbol,
+            'apikey': api_key
+        }
+        response = requests.get("https://www.alphavantage.co/query", params=querystring)
+        data = response.json()
+        exchange_rate = data['Realtime Currency Exchange Rate']['5. Exchange Rate']
+        return float(exchange_rate)
+
+    # Conversion and Display
+    if st.button('Convert'):
+        try:
+            exchange_rate = get_exchange_rate(selected_crypto)
+            crypto_amount = amount_usd / exchange_rate
+            st.success(f"{amount_usd} USD is approximately {crypto_amount:.6f} {selected_crypto}.")
+        except Exception as e:
+            st.error(f"Error: {str(e)}")
