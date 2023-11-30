@@ -6,9 +6,10 @@ from datetime import datetime
 
 # Alpha Vantage API Key and Base URL
 url = "https://alpha-vantage.p.rapidapi.com/query"
+
 headers = {
-    "X-RapidAPI-Key": "7300c21118mshb9b8940b597a52cp1d3136jsnd9f0c95239bd",
-    "X-RapidAPI-Host": "alpha-vantage.p.rapidapi.com"
+	"X-RapidAPI-Key": "e9f4b25c61mshedac56ef6b57bebp1d9467jsnffe01132c579",
+	"X-RapidAPI-Host": "alpha-vantage.p.rapidapi.com"
 }
 
 # Initialize session state for storing data and selected columns
